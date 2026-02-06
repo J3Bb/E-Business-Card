@@ -1,0 +1,157 @@
+/* --- ROOT & GLOBAL --- */
+:root {
+    --gold: #b5a46d;
+    --dark-gold: #8e7d4a;
+    --glass-border: rgba(212, 175, 55, 0.2);
+}
+
+* {
+    margin: 0; padding: 0; box-sizing: border-box;
+    font-family: 'Montserrat', sans-serif;
+}
+
+body {
+    background-color: #e0e0e0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- TAMPILAN KARTU NAMA (INDEX/USER) --- */
+.card-container {
+    background: white;
+    width: 100%; max-width: 400px;
+    border-radius: 30px; overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    margin: 20px auto;
+}
+
+.header-section {
+    position: relative;
+    max-height: 450px; overflow: hidden;
+}
+
+.profile-img {
+    width: 100%; display: block; object-fit: cover;
+}
+
+.logo-top-overlay {
+    position: absolute; top: 25px; left: 25px;
+    width: 65px; z-index: 10; opacity: 0.9;
+}
+
+.info-section {
+    background: linear-gradient(135deg, #ffffff 0%, #f7f3e9 100%);
+    margin-top: -40px; border-radius: 40px 40px 0 0;
+    padding: 40px 25px; position: relative;
+    z-index: 2; text-align: center;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.05);
+}
+
+.name {
+    font-size: 28px; font-weight: 700; color: #1a1a1a !important;
+    margin: 10px 0; display: block;
+}
+
+.title {
+    font-size: 12px; color: #666; letter-spacing: 2px;
+    text-transform: uppercase; margin-bottom: 25px;
+}
+
+/* Tombol Luxury dengan Shimmer */
+.btn-add-contact {
+    position: relative; overflow: hidden;
+    display: inline-flex; align-items: center;
+    background-color: var(--gold); color: white;
+    padding: 12px 30px; border-radius: 12px;
+    text-decoration: none; font-weight: 600;
+    transition: 0.3s;
+}
+
+.btn-add-contact::after {
+    content: ''; position: absolute; top: -50%; left: -100%;
+    width: 30%; height: 200%;
+    background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0) 100%);
+    transform: rotate(30deg);
+    animation: luxury-shimmer 6s ease-in-out infinite;
+}
+
+@keyframes luxury-shimmer {
+    0% { left: -100%; }
+    20% { left: 150%; }
+    100% { left: 150%; }
+}
+
+/* Contact List */
+.contact-list { margin-top: 35px; text-align: left; }
+.contact-item { display: flex; align-items: center; margin-bottom: 20px; text-decoration: none; color: inherit; }
+.icon-circle {
+    width: 45px; height: 45px; border: 1.5px solid var(--gold);
+    border-radius: 50%; display: flex; justify-content: center; align-items: center;
+    margin-right: 15px; color: var(--gold); flex-shrink: 0; transition: 0.3s;
+}
+
+.contact-item:hover .icon-circle {
+    background-color: var(--gold); color: white;
+    transform: translateY(-5px);
+}
+
+/* --- TAMPILAN DASHBOARD ADMIN (TABLES) --- */
+/* Search Bar & Entries */
+.dataTables_filter input {
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid var(--glass-border) !important;
+    color: #fff !important; border-radius: 8px; padding: 8px 15px;
+}
+
+.dataTables_length select {
+    background: #000 !important; border: 1px solid var(--glass-border) !important;
+    color: var(--gold) !important; border-radius: 8px;
+}
+
+/* Tabel UI */
+.table-container {
+    background: transparent; /* Jangan putih di admin */
+    margin-top: 20px;
+}
+
+/* HAPUS ATURAN COLOR #333 YANG LAMA AGAR TEKS TERBACA DI ADMIN */
+#managerTable tbody td {
+    color: #000 !important; /* Teks di baris putih harus hitam */
+}
+#managerTable td .fw-bold {
+    color: #000 !important; /* Nama (Budi) harus hitam pekat */
+}
+
+/* --- SIDEBAR CUSTOM --- */
+.sidebar {
+    width: 260px; height: 100vh; background: #000;
+    position: fixed; left: 0; top: 0; border-right: 1px solid var(--glass-border);
+    padding: 40px 20px; display: flex; flex-direction: column;
+}
+
+/* Status Active - Menu yang sedang dibuka */
+.nav-link.active {
+    color: #000 !important; /* Teks menjadi hitam */
+    background: var(--gold) !important; /* Latar belakang menjadi emas */
+    font-weight: 700;
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+}
+
+/* Pastikan Ikon (Logo) juga ikut menjadi hitam saat aktif */
+.nav-link.active i {
+    color: #000 !important;
+}
+
+/* Efek tambahan agar saat dihover di posisi aktif tetap kontras */
+.nav-link.active:hover {
+    color: #000 !important;
+    background: var(--gold) !important;
+    opacity: 0.9;
+}
+
+/* Animasi Muncul */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.info-section > * { animation: fadeInUp 0.8s ease forwards; opacity: 0; }
