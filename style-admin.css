@@ -1,0 +1,65 @@
+/* style-admin.css */
+:root { 
+    --gold: #D4AF37; 
+    --dark-bg: #0F0F0F; 
+    --sidebar-bg: #000000; 
+    --glass-border: rgba(212, 175, 55, 0.2); 
+}
+
+body { 
+    background-color: var(--dark-bg); 
+    color: #E0E0E0; 
+    font-family: 'Inter', sans-serif; 
+    display: flex; 
+    min-height: 100vh; 
+    margin: 0; 
+    padding: 0; 
+}
+
+.sidebar { 
+    width: 260px; 
+    height: 100vh; 
+    background: var(--sidebar-bg); 
+    position: fixed; 
+    left: 0; 
+    top: 0; 
+    border-right: 1px solid var(--glass-border); 
+    padding: 40px 20px; 
+    z-index: 1000; 
+    display: flex !important; 
+    flex-direction: column !important; 
+}
+
+.sidebar-nav { flex-grow: 1; }
+.sidebar-footer { padding-top: 20px; border-top: 1px solid rgba(212, 175, 55, 0.1); margin-top: auto; }
+.main-content { margin-left: 260px; width: calc(100% - 260px); padding: 50px; min-height: 100vh; }
+
+.nav-link { 
+    color: rgba(255, 255, 255, 0.6) !important; 
+    padding: 12px 18px; 
+    border-radius: 12px; 
+    margin-bottom: 10px; 
+    transition: 0.3s; 
+    display: flex; 
+    align-items: center; 
+    text-decoration: none; 
+    font-size: 0.85rem; 
+    font-weight: 600; 
+}
+
+.nav-link:hover { color: var(--gold) !important; background: rgba(212, 175, 55, 0.1) !important; transform: translateX(5px); }
+.nav-link.active { color: #000 !important; background: var(--gold) !important; font-weight: 700; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3); }
+.nav-link.active i { color: #000 !important; }
+
+.luxury-card { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 20px; padding: 30px; margin-bottom: 20px; }
+.input-group-text { background: #222; color: var(--gold); border: 1px solid var(--glass-border); }
+.form-control:focus { box-shadow: none; border-color: var(--gold); }
+
+#managerTable tbody tr { background: #fff !important; border-radius: 10px; }
+#managerTable tbody td { color: #1a1a1a !important; vertical-align: middle !important; padding: 15px !important; border: none !important; }
+#managerTable td .fw-bold { color: #000 !important; }
+#managerTable td .text-muted-custom { color: #666 !important; font-size: 0.75rem; }
+#managerTable thead th { color: var(--gold) !important; text-transform: uppercase; font-size: 0.75rem; border: none !important; padding-bottom: 15px; }
+
+.btn-gold { background: var(--gold); color: #000; font-weight: 700; border: none; padding: 12px 25px; border-radius: 10px; transition: 0.3s; }
+.btn-gold:hover { background: #b8962e; color: #000; }
