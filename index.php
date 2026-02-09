@@ -12,6 +12,11 @@ if (isset($_GET['name'])) {
 } else {
     die("<center style='margin-top:50px;'><h1>Akses Ditolak</h1></center>");
 }
+
+if (isset($row['id'])) {
+    $id_manager = $row['id'];
+    mysqli_query($conn, "UPDATE managers SET views = views + 1 WHERE id = $id_manager");
+}
 ?>
 
 <!DOCTYPE html>

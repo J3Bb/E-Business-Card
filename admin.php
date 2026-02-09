@@ -7,6 +7,9 @@ if (!isset($_SESSION['admin_logged_in'])) {
     exit;
 }
 
+// Ambil Top 10 yang paling banyak dilihat untuk Dashboard
+$top_managers = mysqli_query($conn, "SELECT name, title, views, photo FROM managers ORDER BY views DESC LIMIT 10");
+
 // --- LOGIKA CRUD ---
 if (isset($_POST['add_manager'])) {
     $name = mysqli_real_escape_string($conn, $_POST['name']);
@@ -95,9 +98,57 @@ $managers = mysqli_query($conn, "SELECT * FROM managers ORDER BY id DESC");
 </div>
 
 <div class="main-content">
+    
     <?php if($page == 'dashboard'): ?>
         <h2 class="text-uppercase fw-bold mb-4">Dashboard Overview</h2>
-        <div class="row"><div class="col-md-4"><div class="luxury-card text-center py-5"><p class="small text-gold fw-bold mb-2">TOTAL DIRECTORY</p><h1 style="font-size: 4rem; color: var(--gold); font-weight: 700;"><?php echo $total_managers; ?></h1></div></div></div>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="luxury-card text-center py-5">
+                    <p class="small text-gold fw-bold mb-2">TOTAL DIRECTORY</p>
+                    <h1 style="font-size: 4rem; color: var(--gold); font-weight: 700;"><?php echo $total_managers; ?></h1>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="luxury-card">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="text-gold fw-bold mb-0"><i class="fas fa-chart-line me-2"></i> TOP 10 VISITED PROFILES</h5>
+                        <span class="badge bg-gold text-dark">Live Reports</span>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover border-secondary">
+                            <thead>
+                                <tr class="small text-muted">
+                                    <th>EXECUTIVE</th>
+                                    <th class="text-end">TOTAL VIEWS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php while($top = mysqli_fetch_assoc($top_managers)): ?>
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="pics/<?php echo $top['photo']; ?>" class="rounded-circle me-3" style="width:35px; height:35px; object-fit:cover; border: 1px solid var(--gold);">
+                                            <div>
+                                                <div class="fw-bold small"><?php echo $top['name']; ?></div>
+                                                <div class="text-muted" style="font-size: 0.7rem;"><?php echo $top['title']; ?></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-end align-middle">
+                                        <span class="fw-bold text-gold"><?php echo number_format($top['views']); ?></span>
+                                        <small class="text-muted ms-1">hits</small>
+                                    </td>
+                                </tr>
+                                <?php endwhile; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     <?php elseif($page == 'add'): ?>
         <h2 class="text-uppercase fw-bold mb-4">Register New Staff</h2>
@@ -127,22 +178,22 @@ $managers = mysqli_query($conn, "SELECT * FROM managers ORDER BY id DESC");
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while($row = mysqli_fetch_assoc($managers)): ?>
+                    <?php while($row_m = mysqli_fetch_assoc($managers)): ?>
                     <tr>
                         <td>
                             <div class="d-flex align-items-center">
-                                <img src="pics/<?php echo $row['photo']; ?>" class="rounded-3 me-3" style="width:45px; height:45px; object-fit:cover; border: 1px solid var(--gold);">
-                                <div><div class="fw-bold"><?php echo $row['name']; ?></div><div class="text-muted-custom"><?php echo $row['email']; ?></div></div>
+                                <img src="pics/<?php echo $row_m['photo']; ?>" class="rounded-3 me-3" style="width:45px; height:45px; object-fit:cover; border: 1px solid var(--gold);">
+                                <div><div class="fw-bold"><?php echo $row_m['name']; ?></div><div class="text-muted-custom"><?php echo $row_m['email']; ?></div></div>
                             </div>
                         </td>
-                        <td class="small fw-bold text-uppercase"><?php echo $row['title']; ?></td>
+                        <td class="small fw-bold text-uppercase"><?php echo $row_m['title']; ?></td>
                         <td class="text-center">
                             <div class="btn-group">
-                                <button class="btn btn-sm btn-outline-dark" onclick='openEditModal(<?php echo json_encode($row); ?>)' title="Edit"><i class="fas fa-edit"></i></button>
-                                <button class="btn btn-sm btn-outline-success" onclick="downloadQRWithLogo('<?php echo $row['slug']; ?>', '<?php echo $row['name']; ?>')" title="Download QR PNG"><i class="fas fa-qrcode"></i></button>
-                                <button class="btn btn-sm btn-outline-warning" onclick="copyCardLink('<?php echo $row['slug']; ?>')" title="Copy Link"><i class="fas fa-link"></i></button>
-                                <a href="index.php?name=<?php echo $row['slug']; ?>" target="_blank" class="btn btn-sm btn-outline-info" title="View Profile"><i class="fas fa-eye"></i></a>
-                                <a href="admin.php?p=data&delete=<?php echo $row['id']; ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete?')"><i class="fas fa-trash"></i></a>
+                                <button class="btn btn-sm btn-outline-dark" onclick='openEditModal(<?php echo json_encode($row_m); ?>)' title="Edit"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-sm btn-outline-success" onclick="downloadQRWithLogo('<?php echo $row_m['slug']; ?>', '<?php echo $row_m['name']; ?>')" title="Download QR PNG"><i class="fas fa-qrcode"></i></button>
+                                <button class="btn btn-sm btn-outline-warning" onclick="copyCardLink('<?php echo $row_m['slug']; ?>')" title="Copy Link"><i class="fas fa-link"></i></button>
+                                <a href="index.php?name=<?php echo $row_m['slug']; ?>" target="_blank" class="btn btn-sm btn-outline-info" title="View Profile"><i class="fas fa-eye"></i></a>
+                                <a href="admin.php?p=data&delete=<?php echo $row_m['id']; ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete?')"><i class="fas fa-trash"></i></a>
                             </div>
                         </td>
                     </tr>
@@ -151,6 +202,7 @@ $managers = mysqli_query($conn, "SELECT * FROM managers ORDER BY id DESC");
             </table>
         </div>
     <?php endif; ?>
+
 </div>
 
 <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
@@ -179,7 +231,6 @@ $managers = mysqli_query($conn, "SELECT * FROM managers ORDER BY id DESC");
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-
 <script src="script-admin.js"></script>
 
 </body>

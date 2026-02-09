@@ -63,3 +63,15 @@ body {
 
 .btn-gold { background: var(--gold); color: #000; font-weight: 700; border: none; padding: 12px 25px; border-radius: 10px; transition: 0.3s; }
 .btn-gold:hover { background: #b8962e; color: #000; }
+
+/* style-admin.css */
+.table-dark {
+    background: transparent !important;
+}
+.table-dark thead th {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-bottom: 1px solid var(--glass-border) !important;
+}
+.table-dark td {
+    border-bottom: 1px solid rgba(212, 175, 55, 0.1) !important;
+}
