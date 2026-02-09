@@ -17,6 +17,19 @@ if (isset($row['id'])) {
     $id_manager = $row['id'];
     mysqli_query($conn, "UPDATE managers SET views = views + 1 WHERE id = $id_manager");
 }
+
+if ($row) {
+    $manager_id = $row['id'];
+    $today = date('Y-m-d');
+    
+    // Hitung total views
+    mysqli_query($conn, "UPDATE managers SET views = views + 1 WHERE id = $manager_id");
+    
+    // Hitung statistik harian (Untuk Grafik)
+    mysqli_query($conn, "INSERT INTO manager_stats (manager_id, visit_date, click_count) 
+                         VALUES ($manager_id, '$today', 1) 
+                         ON DUPLICATE KEY UPDATE click_count = click_count + 1");
+}
 ?>
 
 <!DOCTYPE html>

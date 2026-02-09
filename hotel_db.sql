@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Feb 09, 2026 at 04:11 AM
+-- Generation Time: Feb 09, 2026 at 10:19 AM
 -- Server version: 10.4.32-MariaDB-log
 -- PHP Version: 8.2.12
 
@@ -63,7 +63,29 @@ CREATE TABLE `managers` (
 --
 
 INSERT INTO `managers` (`id`, `slug`, `name`, `title`, `phone_personal`, `phone_office`, `email`, `photo`, `views`) VALUES
-(13, 'budi-herianto', 'Budi Herianto', 'Director of Marketing', '08123213123', '0123123321', 'budi@gmail.com', 'Budi.png', 1);
+(13, 'budi-herianto', 'Budi Herianto', 'Director of Marketing', '08123213123', '+62 123123321', 'budi@gmail.com', 'Budi.png', 11),
+(14, 'bro-ahmad', 'Bro Ahmad', 'Magang', '0817123123', '+62 812381237', 'Ahmad@gmail.com', 'Budi.png', 6);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `manager_stats`
+--
+
+CREATE TABLE `manager_stats` (
+  `id` int(11) NOT NULL,
+  `manager_id` int(11) DEFAULT NULL,
+  `visit_date` date DEFAULT NULL,
+  `click_count` int(11) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `manager_stats`
+--
+
+INSERT INTO `manager_stats` (`id`, `manager_id`, `visit_date`, `click_count`) VALUES
+(1, 13, '2026-02-09', 4),
+(4, 14, '2026-02-09', 3);
 
 --
 -- Indexes for dumped tables
@@ -83,6 +105,13 @@ ALTER TABLE `managers`
   ADD UNIQUE KEY `slug` (`slug`);
 
 --
+-- Indexes for table `manager_stats`
+--
+ALTER TABLE `manager_stats`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `manager_id` (`manager_id`,`visit_date`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -96,7 +125,13 @@ ALTER TABLE `admins`
 -- AUTO_INCREMENT for table `managers`
 --
 ALTER TABLE `managers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT for table `manager_stats`
+--
+ALTER TABLE `manager_stats`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
