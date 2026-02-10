@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Feb 09, 2026 at 10:19 AM
+-- Generation Time: Feb 10, 2026 at 09:58 AM
 -- Server version: 10.4.32-MariaDB-log
 -- PHP Version: 8.2.12
 
@@ -43,6 +43,33 @@ INSERT INTO `admins` (`id`, `username`, `password`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `ecard_logs`
+--
+
+CREATE TABLE `ecard_logs` (
+  `id` int(11) NOT NULL,
+  `manager_id` int(11) DEFAULT NULL,
+  `visitor_ip` varchar(50) DEFAULT NULL,
+  `city` varchar(100) DEFAULT NULL,
+  `region` varchar(100) DEFAULT NULL,
+  `country` varchar(100) DEFAULT NULL,
+  `device_info` varchar(255) DEFAULT NULL,
+  `accessed_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `ecard_logs`
+--
+
+INSERT INTO `ecard_logs` (`id`, `manager_id`, `visitor_ip`, `city`, `region`, `country`, `device_info`, `accessed_at`) VALUES
+(1, 14, '127.0.0.1', 'Unknown', 'Unknown', 'Unknown', 'Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0', '2026-02-10 08:46:52'),
+(2, 14, '127.0.0.1', 'Local', 'Host', 'ID', 'Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0', '2026-02-10 08:46:52'),
+(3, 13, '127.0.0.1', 'Unknown', 'Unknown', 'Unknown', 'Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0', '2026-02-10 08:46:54'),
+(4, 13, '127.0.0.1', 'Local', 'Host', 'ID', 'Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0', '2026-02-10 08:46:54');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `managers`
 --
 
@@ -55,16 +82,17 @@ CREATE TABLE `managers` (
   `phone_office` varchar(20) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
   `photo` varchar(100) DEFAULT NULL,
-  `views` int(11) DEFAULT 0
+  `views` int(11) DEFAULT 0,
+  `last_log_time` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `managers`
 --
 
-INSERT INTO `managers` (`id`, `slug`, `name`, `title`, `phone_personal`, `phone_office`, `email`, `photo`, `views`) VALUES
-(13, 'budi-herianto', 'Budi Herianto', 'Director of Marketing', '08123213123', '+62 123123321', 'budi@gmail.com', 'Budi.png', 11),
-(14, 'bro-ahmad', 'Bro Ahmad', 'Magang', '0817123123', '+62 812381237', 'Ahmad@gmail.com', 'Budi.png', 6);
+INSERT INTO `managers` (`id`, `slug`, `name`, `title`, `phone_personal`, `phone_office`, `email`, `photo`, `views`, `last_log_time`) VALUES
+(13, 'budi-herianto', 'Budi Herianto', 'Director of Marketing', '08123213123', '+62 123123321', 'budi@gmail.com', 'Budi.png', 31, NULL),
+(14, 'bro-ahmad', 'Bro Ahmad', 'Magang', '0817123123', '+62 812381237', 'Ahmad@gmail.com', 'Budi.png', 39, NULL);
 
 -- --------------------------------------------------------
 
@@ -85,7 +113,9 @@ CREATE TABLE `manager_stats` (
 
 INSERT INTO `manager_stats` (`id`, `manager_id`, `visit_date`, `click_count`) VALUES
 (1, 13, '2026-02-09', 4),
-(4, 14, '2026-02-09', 3);
+(4, 14, '2026-02-09', 3),
+(8, 14, '2026-02-10', 9),
+(10, 13, '2026-02-10', 5);
 
 --
 -- Indexes for dumped tables
@@ -96,6 +126,13 @@ INSERT INTO `manager_stats` (`id`, `manager_id`, `visit_date`, `click_count`) VA
 --
 ALTER TABLE `admins`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `ecard_logs`
+--
+ALTER TABLE `ecard_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `manager_id` (`manager_id`);
 
 --
 -- Indexes for table `managers`
@@ -122,6 +159,12 @@ ALTER TABLE `admins`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
+-- AUTO_INCREMENT for table `ecard_logs`
+--
+ALTER TABLE `ecard_logs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
 -- AUTO_INCREMENT for table `managers`
 --
 ALTER TABLE `managers`
@@ -131,7 +174,17 @@ ALTER TABLE `managers`
 -- AUTO_INCREMENT for table `manager_stats`
 --
 ALTER TABLE `manager_stats`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `ecard_logs`
+--
+ALTER TABLE `ecard_logs`
+  ADD CONSTRAINT `ecard_logs_ibfk_1` FOREIGN KEY (`manager_id`) REFERENCES `managers` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

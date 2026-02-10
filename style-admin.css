@@ -238,3 +238,28 @@ body {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
 }
+
+/* Menyamakan warna background +62 dengan input box */
+.input-group-text {
+    background-color: #111 !important; /* Hitam pekat sesuai input */
+    color: #D4AF37 !important;        /* Warna Emas */
+    border-color: #333 !important;     /* Border tipis gelap */
+    font-weight: 600;                  /* Agar font tidak terlalu tipis/tebal */
+    padding-left: 15px;
+    padding-right: 10px;
+}
+
+/* Menghilangkan border pemisah antara +62 dan input agar terlihat menyatu */
+.input-group > .input-group-text {
+    border-right: none !important;
+}
+
+.input-group > .form-control {
+    border-left: none !important;
+}
+
+/* Fokus state agar border tetap emas saat diklik */
+.form-control:focus, .input-group:focus-within {
+    box-shadow: none;
+    border-color: #D4AF37 !important;
+}

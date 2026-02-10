@@ -1,6 +1,69 @@
 <?php
 include 'config.php';
 
+// Ambil slug dari URL
+$slug = mysqli_real_escape_string($conn, $_GET['name']);
+
+// Ambil data manager berdasarkan slug
+$res = mysqli_query($conn, "SELECT id FROM managers WHERE slug = '$slug'");
+$manager = mysqli_fetch_assoc($res);
+
+if ($manager) {
+    $manager_id = $manager['id'];
+    $ip = $_SERVER['REMOTE_ADDR']; // Alamat IP Tamu
+    
+    // Cek detail lokasi via API (server-side)
+    // Gunakan file_get_contents atau CURL
+    $details = json_decode(file_get_contents("http://ip-api.com/json/{$ip}"));
+    
+    $city = $details->city ?? 'Unknown';
+    $region = $details->regionName ?? 'Unknown';
+    $country = $details->country ?? 'Unknown';
+    $device = $_SERVER['HTTP_USER_AGENT']; // Informasi HP/Browser
+
+    // Simpan ke database
+    $log_query = "INSERT INTO ecard_logs (manager_id, visitor_ip, city, region, country, device_info) 
+                  VALUES ('$manager_id', '$ip', '$city', '$region', '$country', '$device')";
+    mysqli_query($conn, $log_query);
+    
+    // Update total views (opsional, jika Anda ingin sinkron)
+    mysqli_query($conn, "UPDATE managers SET views = views + 1 WHERE id = '$manager_id'");
+}
+
+if (isset($_GET['name'])) {
+    $slug = mysqli_real_escape_string($conn, $_GET['name']);
+    $res = mysqli_query($conn, "SELECT id FROM managers WHERE slug = '$slug'");
+    $manager = mysqli_fetch_assoc($res);
+
+    if ($manager) {
+        $manager_id = $manager['id'];
+        
+        // Deteksi IP yang lebih akurat
+        $ip = $_SERVER['REMOTE_ADDR'];
+        if ($ip == '::1' || $ip == '127.0.0.1') {
+            $city = "Local"; $region = "Host"; $country = "ID";
+        } else {
+            // Gunakan timeout agar tidak membuat loading lambat
+            $ctx = stream_context_create(['http' => ['timeout' => 2]]);
+            $api_url = "http://ip-api.com/json/{$ip}";
+            $details = @json_decode(file_get_contents($api_url, false, $ctx));
+            
+            $city = $details->city ?? 'Unknown';
+            $region = $details->regionName ?? 'Unknown';
+            $country = $details->countryCode ?? 'ID';
+        }
+
+        $device = mysqli_real_escape_string($conn, $_SERVER['HTTP_USER_AGENT']);
+
+        // Simpan Log
+        mysqli_query($conn, "INSERT INTO ecard_logs (manager_id, visitor_ip, city, region, country, device_info) 
+                             VALUES ('$manager_id', '$ip', '$city', '$region', '$country', '$device')");
+        
+        // Update Hit Counter
+        mysqli_query($conn, "UPDATE managers SET views = views + 1 WHERE id = '$manager_id'");
+    }
+}
+
 if (isset($_GET['name'])) {
     $slug = mysqli_real_escape_string($conn, $_GET['name']);
     $query = mysqli_query($conn, "SELECT * FROM managers WHERE slug = '$slug'");
@@ -35,6 +98,24 @@ if ($row) {
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+        <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        // Ganti G-XXXXXXXXXX dengan Measurement ID dari dashboard Google Analytics Anda
+        gtag('config', 'G-XXXXXXXXXX', {
+            'executive_name': '<?php echo $row['name']; ?>', // Mengirim Nama Manager
+            'executive_slug': '<?php echo $slug; ?>'       // Mengirim Slug Manager
+        });
+
+        // Mengirim Event Custom "view_digital_card"
+        gtag('event', 'view_digital_card', {
+            'manager_name': '<?php echo $row['name']; ?>',
+            'content_type': 'digital_business_card'
+        });
+        </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:title" content="Digital Business Card - <?php echo $row['name']; ?>">
