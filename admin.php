@@ -2,148 +2,85 @@
 session_start();
 include 'config.php'; 
 
-// --- LOGIKA TRACKING ANTI-DOUBLE TOTAL (VERSI PERBAIKAN) ---
+// --- 1. TRACKING LOGIC ---
 if (isset($_GET['name']) && !isset($_GET['p'])) {
     $slug = mysqli_real_escape_string($conn, $_GET['name']);
-    
     if (!isset($_SESSION['last_track_time']) || (time() - $_SESSION['last_track_time'] > 5)) {
         $res = mysqli_query($conn, "SELECT id FROM managers WHERE slug = '$slug'");
-        $manager = mysqli_fetch_assoc($res);
-
-        if ($manager) {
-            $manager_id = $manager['id'];
-            $ip = $_SERVER['REMOTE_ADDR'];
-            $device = mysqli_real_escape_string($conn, $_SERVER['HTTP_USER_AGENT']);
-
-            $city = "Unknown";
-            $region = "Unknown";
-
-            if ($ip == '127.0.0.1' || $ip == '::1') {
-                $city = "Local";
-                $region = "Host";
-            } else {
-                $ctx = stream_context_create(['http' => ['timeout' => 2]]);
-                $api_data = @file_get_contents("http://ip-api.com/json/{$ip}", false, $ctx);
-                if ($api_data) {
-                    $details = json_decode($api_data);
-                    if ($details && $details->status !== 'fail') {
-                        $city = $details->city ?? 'External';
-                        $region = $details->regionName ?? 'Unknown';
-                    }
-                }
-            }
-
-            $query = "INSERT INTO ecard_logs (manager_id, visitor_ip, city, region, device_info) 
-                      VALUES ('$manager_id', '$ip', '$city', '$region', '$device')";
-            
-            if (mysqli_query($conn, $query)) {
-                mysqli_query($conn, "UPDATE managers SET views = views + 1 WHERE id = '$manager_id'");
-                $_SESSION['last_track_time'] = time();
-            }
+        if ($m = mysqli_fetch_assoc($res)) {
+            trackVisitor($conn, $m['id']);
         }
     }
 }
 
-// --- LOGIKA FILTER TABEL LOGS ---
-$filter_manager = isset($_GET['filter_name']) ? mysqli_real_escape_string($conn, $_GET['filter_name']) : '';
-$log_query = "SELECT l.*, m.name as manager_name FROM ecard_logs l JOIN managers m ON l.manager_id = m.id";
-if ($filter_manager != '') { $log_query .= " WHERE l.manager_id = '$filter_manager'"; }
-$log_query .= " ORDER BY l.accessed_at DESC LIMIT 100";
-$tracking_logs = mysqli_query($conn, $log_query);
-
+// --- 2. PROTEKSI ---
 if (!isset($_SESSION['admin_logged_in']) && !isset($_GET['name'])) {
-    header("Location: login.php");
-    exit;
+    header("Location: login.php"); exit;
 }
 
-if (isset($_POST['reset_logs'])) {
-    mysqli_query($conn, "TRUNCATE TABLE ecard_logs");
-    echo "<script>document.addEventListener('DOMContentLoaded', function() { Swal.fire({ icon: 'success', title: 'Logs Cleared!', background: '#1a1a1a', color: '#D4AF37' }); });</script>";
-}
-
-// --- LOGIKA CRUD (ADD) ---
+// --- 3. CRUD: ADD STAFF ---
 if (isset($_POST['add_manager'])) {
-    // ... (nama, title, email tetap)
-    
-    // Sanitasi Personal Phone (WhatsApp)
-    $p_raw = ltrim(preg_replace('/[^0-9]/', '', $_POST['phone_personal']), '0');
-    if (substr($p_raw, 0, 2) == '62') $p_raw = substr($p_raw, 2);
-    $phone_personal = "+62 " . mysqli_real_escape_string($conn, $p_raw);
-
-    // Sanitasi Office Line
-    $o_raw = ltrim(preg_replace('/[^0-9]/', '', $_POST['phone_office']), '0');
-    if (substr($o_raw, 0, 2) == '62') $o_raw = substr($o_raw, 2);
-    $phone_office = "+62 " . mysqli_real_escape_string($conn, $o_raw);
-    
-    // ... (sisa query insert tetap)
-}
-
-// --- LOGIKA CRUD (UPDATE) ---
-if (isset($_POST['update_manager'])) {
-    // ... (id, name, title, email tetap)
-    
-    // Sanitasi Personal Phone
-    $p_input = str_replace('+62', '', $_POST['phone_personal']);
-    $p_clean = ltrim(preg_replace('/[^0-9]/', '', $p_input), '0');
-    if (substr($p_clean, 0, 2) == '62') $p_clean = substr($p_clean, 2);
-    $phone_personal = "+62 " . mysqli_real_escape_string($conn, $p_clean);
-
-    // Sanitasi Office Line
-    $o_input = str_replace('+62', '', $_POST['phone_office']);
-    $o_clean = ltrim(preg_replace('/[^0-9]/', '', $o_input), '0');
-    if (substr($o_clean, 0, 2) == '62') $o_clean = substr($o_clean, 2);
-    $phone_office = "+62 " . mysqli_real_escape_string($conn, $o_clean);
-    
-    // ... (sisa query update tetap)
-}
-
-// --- LOGIKA CRUD (UPDATE) ---
-if (isset($_POST['update_manager'])) {
-    $id = mysqli_real_escape_string($conn, $_POST['id']);
     $name = mysqli_real_escape_string($conn, $_POST['name']);
     $title = mysqli_real_escape_string($conn, $_POST['title']);
     $email = mysqli_real_escape_string($conn, $_POST['email']);
-    $phone_personal = mysqli_real_escape_string($conn, $_POST['phone_personal']);
-    
-    // Sanitasi Update
-    $office_input = str_replace('+62', '', $_POST['phone_office']);
-    $office_clean = ltrim(preg_replace('/[^0-9]/', '', $office_input), '0');
-    $phone_office = "+62 " . mysqli_real_escape_string($conn, $office_clean);
-    
+    $slug = strtolower(str_replace(' ', '-', $name));
+    $phone_p = formatPhone($_POST['phone_personal']);
+    $phone_o = formatPhone($_POST['phone_office']);
+
+    $photoName = uploadAndCompress($_FILES['photo']);
+    if ($photoName) {
+        mysqli_query($conn, "INSERT INTO managers (name, title, email, phone_personal, phone_office, photo, slug, views) 
+                             VALUES ('$name', '$title', '$email', '$phone_p', '$phone_o', '$photoName', '$slug', 0)");
+        echo "<script>document.addEventListener('DOMContentLoaded', function() { Swal.fire({ icon: 'success', title: 'Published!', background: '#1a1a1a', color: '#D4AF37' }); });</script>";
+    }
+}
+
+// --- 4. CRUD: UPDATE STAFF ---
+if (isset($_POST['update_manager'])) {
+    $id = $_POST['id'];
+    $name = mysqli_real_escape_string($conn, $_POST['name']);
+    $title = mysqli_real_escape_string($conn, $_POST['title']);
+    $email = mysqli_real_escape_string($conn, $_POST['email']);
+    $phone_p = formatPhone($_POST['phone_personal']);
+    $phone_o = formatPhone($_POST['phone_office']);
     $slug = strtolower(str_replace(' ', '-', $name));
 
-    if ($_FILES['photo']['name']) {
-        $photo = time() . "_" . $_FILES['photo']['name'];
-        move_uploaded_file($_FILES['photo']['tmp_name'], "pics/" . $photo);
-        $query = "UPDATE managers SET name='$name', title='$title', email='$email', phone_personal='$phone_personal', phone_office='$phone_office', photo='$photo', slug='$slug' WHERE id='$id'";
+    if (!empty($_FILES['photo']['name'])) {
+        $photoName = uploadAndCompress($_FILES['photo']);
+        $query = "UPDATE managers SET name='$name', title='$title', email='$email', phone_personal='$phone_p', phone_office='$phone_o', photo='$photoName', slug='$slug' WHERE id='$id'";
     } else {
-        $query = "UPDATE managers SET name='$name', title='$title', email='$email', phone_personal='$phone_personal', phone_office='$phone_office', slug='$slug' WHERE id='$id'";
+        $query = "UPDATE managers SET name='$name', title='$title', email='$email', phone_personal='$phone_p', phone_office='$phone_o', slug='$slug' WHERE id='$id'";
     }
-
-    if (mysqli_query($conn, $query)) {
-        echo "<script>document.addEventListener('DOMContentLoaded', function() { Swal.fire({ icon: 'success', title: 'Updated!', background: '#1a1a1a', color: '#D4AF37' }).then(() => { window.location.href='admin.php?p=data'; }); });</script>";
-    }
+    mysqli_query($conn, $query);
+    echo "<script>window.location.href='admin.php?p=data';</script>";
 }
 
-if (isset($_GET['delete'])) {
-    $id = mysqli_real_escape_string($conn, $_GET['delete']);
-    mysqli_query($conn, "DELETE FROM managers WHERE id='$id'");
-    header("Location: admin.php?p=data");
-    exit;
+// --- 5. LOGS & DATA FETCHING ---
+if (isset($_POST['reset_logs'])) {
+    mysqli_query($conn, "TRUNCATE TABLE ecard_logs");
 }
 
-$page = isset($_GET['p']) ? $_GET['p'] : 'dashboard';
-$top_managers = mysqli_query($conn, "SELECT name, views, photo FROM managers ORDER BY views DESC LIMIT 10");
+$page = $_GET['p'] ?? 'dashboard';
 $total_managers = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM managers"));
+$top_managers = mysqli_query($conn, "SELECT name, views, photo FROM managers ORDER BY views DESC LIMIT 10");
 $managers = mysqli_query($conn, "SELECT * FROM managers ORDER BY id DESC");
 
+// Weekly Chart Data
 $weekly_query = mysqli_query($conn, "SELECT visit_date, SUM(click_count) as total FROM manager_stats WHERE visit_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) GROUP BY visit_date ORDER BY visit_date ASC");
 $days = []; $day_clicks = [];
 while($r = mysqli_fetch_assoc($weekly_query)) { $days[] = date('D', strtotime($r['visit_date'])); $day_clicks[] = (int)$r['total']; }
 
+// Monthly Chart Data
 $monthly_query = mysqli_query($conn, "SELECT DATE_FORMAT(visit_date, '%b') as month_name, SUM(click_count) as total FROM manager_stats WHERE visit_date >= DATE_SUB(CURDATE(), INTERVAL 5 MONTH) GROUP BY month_name ORDER BY MIN(visit_date) ASC");
 $months = []; $month_clicks = [];
 while($r = mysqli_fetch_assoc($monthly_query)) { $months[] = $r['month_name']; $month_clicks[] = (int)$r['total']; }
+
+// Tracking Logs Filter
+$filter_manager = $_GET['filter_name'] ?? '';
+$log_sql = "SELECT l.*, m.name as manager_name FROM ecard_logs l JOIN managers m ON l.manager_id = m.id";
+if ($filter_manager) $log_sql .= " WHERE l.manager_id = '$filter_manager'";
+$log_sql .= " ORDER BY l.accessed_at DESC LIMIT 100";
+$tracking_logs = mysqli_query($conn, $log_sql);
 ?>
 
 <!DOCTYPE html>
@@ -296,27 +233,44 @@ while($r = mysqli_fetch_assoc($monthly_query)) { $months[] = $r['month_name']; $
         </div>
 
     <?php elseif($page == 'add'): ?>
-        <h2 class="text-uppercase fw-bold mb-4">Register New Staff</h2>
-        <div class="luxury-card p-4">
-            <form method="POST" enctype="multipart/form-data">
-                <div class="row g-4">
-                    <div class="col-md-6"><label class="small text-gold fw-bold mb-2 text-uppercase">Full Name</label><input type="text" name="name" class="form-control" placeholder="e.g. Budi" required></div>
-                    <div class="col-md-6"><label class="small text-gold fw-bold mb-2 text-uppercase">Position</label><input type="text" name="title" class="form-control" placeholder="e.g. Director" required></div>
-                    <div class="col-md-6"><label class="small text-gold fw-bold mb-2 text-uppercase">Email Address</label><input type="email" name="email" class="form-control" placeholder="name@thetranshotel.com" required></div>
-                    <div class="col-md-6"><label class="small text-gold fw-bold mb-2 text-uppercase">WhatsApp (62...)</label><input type="text" name="phone_personal" class="form-control" placeholder="628123456789" required></div>
-                    <div class="col-md-6">
-                        <label class="small text-gold fw-bold mb-2 text-uppercase">WhatsApp (Personal)</label>
-                        <div class="input-group">
-                            <span class="input-group-text">+62</span>
-                            <input type="text" name="phone_personal" id="edit-phone-p" class="form-control" 
-                                placeholder="8123456789" required>
-                        </div>
-                    </div>
-                    <div class="col-md-6"><label class="small text-gold fw-bold mb-2 text-uppercase">Profile Photo</label><input type="file" name="photo" class="form-control" required></div>
-                    <div class="col-12 mt-4"><button type="submit" name="add_manager" class="btn btn-gold w-100 py-3 fw-bold text-uppercase" style="letter-spacing: 2px;">Publish Profile</button></div>
+    <h2 class="text-uppercase fw-bold mb-4">Register New Staff</h2>
+    <div class="luxury-card p-4">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label class="small text-gold fw-bold mb-2 text-uppercase">Full Name</label>
+                    <input type="text" name="name" class="form-control" placeholder="e.g. Budi" required>
                 </div>
-            </form>
-        </div>
+                <div class="col-md-6">
+                    <label class="small text-gold fw-bold mb-2 text-uppercase">Position</label>
+                    <input type="text" name="title" class="form-control" placeholder="e.g. Director" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="small text-gold fw-bold mb-2 text-uppercase">Email Address</label>
+                    <input type="email" name="email" class="form-control" placeholder="name@thetranshotel.com" required>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="small text-gold fw-bold mb-2 text-uppercase">WhatsApp (Personal)</label>
+                    <input type="text" name="phone_personal" class="form-control" placeholder="e.g. 08123456789" required>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="small text-gold fw-bold mb-2 text-uppercase">Office Line</label>
+                    <input type="text" name="phone_office" class="form-control" placeholder="e.g. 022887234" required>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="small text-gold fw-bold mb-2 text-uppercase">Profile Photo</label>
+                    <input type="file" name="photo" class="form-control" accept="image/*" onchange="validateFile(this)" required>
+                </div>
+                
+                <div class="col-12 mt-4">
+                    <button type="submit" name="add_manager" class="btn btn-gold w-100 py-3 fw-bold text-uppercase">Publish Profile</button>
+                </div>
+            </div>
+        </form>
+    </div>
 
     <?php elseif($page == 'data'): ?>
         <h2 class="text-uppercase fw-bold mb-4">Manager Directory</h2>
@@ -375,7 +329,7 @@ while($r = mysqli_fetch_assoc($monthly_query)) { $months[] = $r['month_name']; $
                         <div class="col-md-6"><label class="small text-gold fw-bold mb-2">FULL NAME</label><input type="text" name="name" id="edit-name" class="form-control"></div>
                         <div class="col-md-6"><label class="small text-gold fw-bold mb-2">POSITION</label><input type="text" name="title" id="edit-title" class="form-control"></div>
                         <div class="col-md-6"><label class="small text-gold fw-bold mb-2">EMAIL</label><input type="email" name="email" id="edit-email" class="form-control"></div>
-                        <div class="col-md-6"><label class="small text-gold fw-bold mb-2">WHATSAPP</label><input type="text" name="phone_personal" id="edit-phone-p" class="form-control"></div>
+                        <div class="col-md-6"><label class="small text-gold fw-bold mb-2 text-uppercase">WhatsApp (Personal)</label><input type="text" name="phone_personal" id="edit-phone-p" class="form-control"></div>
                         <div class="col-md-6">
                             <label class="small text-gold fw-bold mb-2">OFFICE LINE</label>
                             <div class="input-group">
@@ -383,7 +337,8 @@ while($r = mysqli_fetch_assoc($monthly_query)) { $months[] = $r['month_name']; $
                                 <input type="text" name="phone_office" id="edit-phone-o" class="form-control office-format">
                             </div>
                         </div>
-                        <div class="col-md-6"><label class="small text-gold fw-bold mb-2">REPLACE PHOTO (Optional)</label><input type="file" name="photo" class="form-control"></div>
+                        <div class="col-md-6">
+                            <label class="small text-gold fw-bold mb-2">REPLACE PHOTO (Optional)</label><input type="file" name="photo" class="form-control" accept="image/*" onchange="validateFile(this)"></div>
                     </div>
                 </div>
                 <div class="modal-footer border-secondary">
@@ -395,36 +350,10 @@ while($r = mysqli_fetch_assoc($monthly_query)) { $months[] = $r['month_name']; $
 </div>
 
 <script>
-    const commonChartOptions = {
-        responsive: true, maintainAspectRatio: false,
-        scales: { y: { beginAtZero: true, suggestedMax: 10, ticks: { stepSize: 1, color: '#888' }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#888' }, grid: { display: false } } },
-        plugins: { legend: { display: false } }
-    };
-    window.onload = function() {
-        if(document.getElementById('weeklyChart')) { new Chart(document.getElementById('weeklyChart'), { type: 'line', data: { labels: <?php echo json_encode($days); ?>, datasets: [{ data: <?php echo json_encode($day_clicks); ?>, borderColor: '#D4AF37', backgroundColor: 'rgba(212, 175, 55, 0.1)', fill: true, tension: 0.4 }] }, options: commonChartOptions }); }
-        if(document.getElementById('monthlyChart')) { new Chart(document.getElementById('monthlyChart'), { type: 'bar', data: { labels: <?php echo json_encode($months); ?>, datasets: [{ data: <?php echo json_encode($month_clicks); ?>, backgroundColor: '#D4AF37', borderRadius: 5 }] }, options: commonChartOptions }); }
-    };
-
-    // Script tambahan untuk menangani Edit Modal agar +62 tidak double
-    function openEditModal(data) {
-    document.getElementById('edit-id').value = data.id;
-    document.getElementById('edit-name').value = data.name;
-    document.getElementById('edit-title').value = data.title;
-    document.getElementById('edit-email').value = data.email;
-    
-    // Bersihkan +62 saat tampil di modal edit agar user tidak bingung
-    document.getElementById('edit-phone-p').value = data.phone_personal.replace('+62 ', '');
-    document.getElementById('edit-phone-o').value = data.phone_office.replace('+62 ', '');
-    
-    new bootstrap.Modal(document.getElementById('editModal')).show();
-}
-
-    // Validator Angka
-    document.querySelectorAll('.office-format, [name="phone_personal"]').forEach(input => {
-        input.addEventListener('input', function() {
-            this.value = this.value.replace(/[^0-9 ]/g, '');
-        });
-    });
+    const weeklyLabels = <?php echo json_encode($days); ?>;
+    const weeklyData = <?php echo json_encode($day_clicks); ?>;
+    const monthlyLabels = <?php echo json_encode($months); ?>;
+    const monthlyData = <?php echo json_encode($month_clicks); ?>;
 </script>
 
 <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
